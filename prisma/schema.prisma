@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = "file:./dev.db"
+  url      = "file::memory:"
 }
 
 model Tenant {
@@ -87,6 +87,7 @@ model MenuItem {
   tenant    Tenant       @relation(fields: [tenantId], references: [id])
   category  Category     @relation(fields: [categoryId], references: [id])
   orderItems OrderItem[]
+  recipes   Recipe[]
 
   @@unique([tenantId, name])
 }
@@ -219,18 +220,32 @@ model InventoryItem {
 
   @@unique([tenantId, name])
   purchaseOrderItems PurchaseOrderItem[]
+  recipeIngredients RecipeIngredient[]
 }
 
 model Recipe {
-  id         String   @id @default(cuid())
-  tenantId   String
-  menuItemId String
-  inventoryItemId String
-  quantity   Float
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id          String   @id @default(cuid())
+  tenantId    String
+  menuItemId  String
+  yield       Float?
+  instructions String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenant      Tenant            @relation(fields: [tenantId], references: [id])
+  menuItem    MenuItem          @relation(fields: [menuItemId], references: [id])
+  ingredients RecipeIngredient[]
+}
+
+model RecipeIngredient {
+  id            String   @id @default(cuid())
+  recipeId      String
+  inventoryItemId String
+  quantity      Float
+  unit          String
+
+  recipe        Recipe         @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  inventoryItem InventoryItem  @relation(fields: [inventoryItemId], references: [id])
 }
 
 model PurchaseOrder {

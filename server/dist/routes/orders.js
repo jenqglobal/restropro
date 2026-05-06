@@ -395,13 +395,16 @@ async function deductInventory(tenantId, items) {
     for (const item of items) {
         const recipes = await prisma.recipe.findMany({
             where: { tenantId, menuItemId: item.menuItemId },
+            include: { ingredients: true },
         });
         for (const recipe of recipes) {
-            const stockNeeded = recipe.quantity * item.quantity;
-            await prisma.inventoryItem.update({
-                where: { id: recipe.inventoryItemId },
-                data: { currentStock: { decrement: stockNeeded } },
-            });
+            for (const ingredient of recipe.ingredients) {
+                const stockNeeded = ingredient.quantity * item.quantity;
+                await prisma.inventoryItem.update({
+                    where: { id: ingredient.inventoryItemId },
+                    data: { currentStock: { decrement: stockNeeded } },
+                });
+            }
         }
     }
 }

@@ -113,7 +113,7 @@ router.get('/recipes/:menuItemId', authenticateToken, async (req, res) => {
 
     const recipes = await prisma.recipe.findMany({
       where: { menuItemId, tenantId: req.user.tenantId },
-      include: { inventoryItem: true },
+      include: { ingredients: { include: { inventoryItem: true } } },
     });
 
     res.json(recipes);
@@ -125,15 +125,21 @@ router.get('/recipes/:menuItemId', authenticateToken, async (req, res) => {
 // Create recipe (ingredient mapping)
 router.post('/recipes', authenticateToken, requireRole('owner', 'manager'), async (req, res) => {
   try {
-    const { menuItemId, inventoryItemId, quantity } = req.body;
+    const { menuItemId, inventoryItemId, quantity, unit } = req.body;
 
     const recipe = await prisma.recipe.create({
       data: {
         tenantId: req.user.tenantId,
         menuItemId,
-        inventoryItemId,
-        quantity,
+        ingredients: {
+          create: {
+            inventoryItemId,
+            quantity,
+            unit: unit || 'piece',
+          },
+        },
       },
+      include: { ingredients: true },
     });
 
     res.status(201).json(recipe);
